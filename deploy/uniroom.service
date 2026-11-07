@@ -1,0 +1,12 @@
+[Unit]
+Description=Uniroom daily scrape + deploy
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/uniroom
+ExecStart=/opt/uniroom/run_daily.sh
+
+[Install]
+WantedBy=multi-user.target

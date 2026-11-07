@@ -1,0 +1,4 @@
+# Edit with: crontab -e
+# Uniroom: fresh scrape + deploy, daily at 03:00.
+# Logs go to /opt/uniroom/logs/daily.log (run_daily.sh also tee's to stdout).
+0 3 * * * /opt/uniroom/run_daily.sh >> /opt/uniroom/logs/daily.log 2>&1

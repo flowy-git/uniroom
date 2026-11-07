@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Generated data — rebuilt by build_data.py, uploaded by wrangler, never committed
+data_raw/
+rooms_review.md
+site/data/*
+!site/data/.gitkeep
+
+# Local secrets / logs / tooling
+.env
+logs/
+*.log
+node_modules/
+.wrangler/

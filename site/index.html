@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="de" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Was läuft wo? - Raumbelegung an der Uni Wien</title>
+<meta name="description" content="Inoffizielles Tool: Was läuft gerade in welchem Hörsaal / Raum der Universität Wien?">
+<style>
+  :root {
+    --bg: #fdfdfc;
+    --text: #1b1b1b;
+    --muted: #6b6b6b;
+    --border: #d6d6d1;
+    --accent: #2c5aa0;
+    --accent-ink: #ffffff;
+  }
+  :root[data-theme="dark"] {
+    --bg: #161616;
+    --text: #dededb;
+    --muted: #9a9a96;
+    --border: #33332f;
+    --accent: #7aa4d8;
+    --accent-ink: #161616;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--accent); }
+  a:hover { text-decoration: none; }
+
+  header, main, footer { max-width: 44rem; margin: 0 auto; padding: 0 1.25rem; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-top: 2.5rem; padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  h1 { margin: 0; font-size: 1.5rem; font-weight: 680; letter-spacing: -0.01em; }
+  .sub { margin: .4rem 0 0; color: var(--muted); font-size: .92rem; max-width: 36rem; }
+
+  #themeToggle {
+    background: none; color: var(--text); border: 1px solid var(--border);
+    padding: .3rem .7rem; font-size: .85rem; cursor: pointer;
+    border-radius: 2px;
+  }
+  #themeToggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  main { padding-top: 1.75rem; }
+
+  .controls { display: grid; gap: 1rem 1.25rem; grid-template-columns: 1fr 1fr; }
+  label { display: block; font-size: .82rem; color: var(--muted); margin-bottom: .3rem; }
+  select, input {
+    width: 100%; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); padding: .45rem .5rem; font-size: .95rem;
+    border-radius: 2px; font-family: inherit;
+  }
+  select:focus, input:focus { outline: none; border-color: var(--accent); }
+  .span2 { grid-column: 1 / -1; }
+  .dt-row { display: flex; gap: 1.25rem; }
+  .dt-row > div { flex: 1; }
+  #go {
+    background: var(--accent); color: var(--accent-ink); border: none;
+    padding: .5rem 1.25rem; font-size: .95rem; cursor: pointer; border-radius: 2px;
+  }
+  #go:hover { opacity: .88; }
+  .hint { color: var(--muted); font-size: .85rem; margin-top: .5rem; }
+
+  #status { color: var(--muted); font-size: .88rem; margin: 1.25rem 0; min-height: 1.3em; }
+  #status.error { color: #b3261e; }
+
+  h2 { font-size: 1.02rem; margin: 1.75rem 0 .6rem; font-weight: 680; }
+
+  .hit { border: 1px solid var(--border); padding: .7rem .9rem; margin-bottom: .5rem; border-radius: 2px; }
+  .hit .when { font-weight: 650; font-variant-numeric: tabular-nums; }
+  .hit .room { color: var(--muted); font-size: .88rem; }
+
+  .badge {
+    display: inline-block; border: 1px solid var(--accent); color: var(--accent);
+    font-size: .72rem; padding: 0 .4rem; margin-left: .45rem; border-radius: 2px;
+    vertical-align: middle;
+  }
+  .hit a { font-size: .88rem; }
+
+  table.day { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  table.day td, table.day th {
+    text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  table.day th { color: var(--muted); font-weight: 600; }
+  table.day td:first-child, table.day th:first-child { padding-left: 0; }
+
+  footer { margin-top: 2.5rem; padding-bottom: 3rem; color: var(--muted); font-size: .84rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+  .notice { border: 1px solid var(--border); padding: .6rem .8rem; margin-bottom: 1rem; border-radius: 2px; }
+  .notice strong { color: var(--text); }
+  footer details { margin-top: .75rem; }
+  footer details summary { cursor: pointer; color: var(--muted); }
+  footer details ul { padding-left: 1.2rem; }
+  footer details li { margin-bottom: .4rem; }
+  .data-stamp { margin: .75rem 0 .4rem; }
+
+  .controls-row { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+  .ghost { background: none; border: 1px solid var(--border); color: var(--text); padding: .4rem .7rem; font-size: .85rem; cursor: pointer; border-radius: 2px; }
+  .ghost:hover, .ghost.on { border-color: var(--accent); color: var(--accent); }
+  .week-nav { display: inline-flex; align-items: center; gap: .6rem; }
+  .week-nav button { background: none; border: 1px solid var(--border); color: var(--text); padding: .3rem .6rem; font-size: .85rem; cursor: pointer; border-radius: 2px; }
+  .week-nav button:hover { border-color: var(--accent); color: var(--accent); }
+  #weekLabel { color: var(--muted); font-size: .88rem; white-space: nowrap; }
+  .week { display: grid; grid-template-columns: repeat(7, minmax(8rem, 1fr)); gap: .6rem; overflow-x: auto; align-items: start; }
+  .weekday { border: 1px solid var(--border); padding: .5rem .6rem; }
+  .wd-head { font-size: .82rem; color: var(--muted); margin-bottom: .5rem; padding-bottom: .35rem; border-bottom: 1px solid var(--border); }
+  .wd-head .d { display: block; font-weight: 650; color: var(--text); }
+  .wd-slot { font-size: .78rem; margin-bottom: .55rem; line-height: 1.35; }
+  .wd-slot .t { font-variant-numeric: tabular-nums; font-weight: 650; }
+  .week-missing { color: var(--muted); font-size: .9rem; }
+
+  .modes { display: inline-flex; gap: .6rem; }
+
+  /* Building time-matrix */
+  .matrix-scroll { display: flex; border: 1px solid var(--border); border-radius: 2px; overflow-x: auto; margin-top: .4rem; }
+  .matrix-time { position: sticky; left: 0; z-index: 2; flex: 0 0 3.5rem; background: var(--bg); border-right: 1px solid var(--border); }
+  .time-head { height: 2.4rem; border-bottom: 1px solid var(--border); }
+  .time-body { position: relative; }
+  .time-body .hh { position: absolute; right: .4rem; transform: translateY(-50%); font-size: .68rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .matrix-grid { display: flex; }
+  .room-col { flex: 0 0 9.5rem; border-right: 1px solid var(--border); }
+  .room-col:last-child { border-right: none; }
+  .room-head { height: 2.4rem; border-bottom: 1px solid var(--border); padding: .4rem .5rem; font-size: .8rem; font-weight: 650; display: flex; align-items: center; overflow: hidden; }
+  .room-body { position: relative; background-image: repeating-linear-gradient(to bottom, var(--border) 0, var(--border) 1px, transparent 1px, transparent 60px); }
+  .booking { position: absolute; left: 2px; right: 2px; background: color-mix(in srgb, var(--accent) 16%, transparent); border-left: 2px solid var(--accent); border-radius: 2px; overflow: hidden; padding: 2px .35rem; color: var(--text); }
+  .booking.exam { background: color-mix(in srgb, #d64545 16%, transparent); border-left-color: #d64545; }
+  .b-time { font-size: .66rem; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .b-title { font-size: .72rem; line-height: 1.25; overflow-wrap: anywhere; }
+  .b-title a { color: inherit; text-decoration: none; }
+  .b-title a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) { .controls { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Was läuft wo?</h1>
+    <p class="sub">Raumbelegung an der Universität Wien - Gebäude &amp; Raum wählen, Zeitpunkt eingeben,
+    sehen, welcher Kurs dort stattfindet. <strong>Inoffizielles Tool</strong> auf Basis der öffentlichen
+    u:find-Schnittstelle.</p>
+  </div>
+  <button id="themeToggle" title="Hell-/Dunkelmodus umschalten">Dunkel</button>
+</header>
+
+<main>
+  <section class="controls">
+    <div>
+      <label for="building">Gebäude</label>
+      <select id="building"><option value="">— alle —</option></select>
+    </div>
+    <div>
+      <label for="room">Raum / Hörsaal</label>
+      <select id="room"><option value="">— alle —</option></select>
+    </div>
+    <div class="dt-row span2">
+      <div>
+        <label for="date">Datum</label>
+        <input type="date" id="date">
+      </div>
+      <div>
+        <label for="time">Uhrzeit</label>
+        <input type="time" id="time" step="300">
+      </div>
+    </div>
+    <div class="span2">
+      <button id="go">Suchen</button>
+      <p class="hint">Die Dropdowns filtern sich gegenseitig: Ein Gebäude zeigt nur die dortigen Räume,
+      ein Raum nur die Gebäude, in denen er existiert. „— alle —“ lässt die Auswahl offen.</p>
+    </div>
+    <div class="span2 controls-row">
+      <div class="modes">
+        <button id="modeList" class="ghost" title="Tagesansicht">Tag</button>
+        <button id="modeWeek" class="ghost" title="Wochenansicht (ein Raum)">Woche</button>
+        <button id="modeBuilding" class="ghost" title="Gebäude-Matrix (alle Räume)">Gebäude</button>
+      </div>
+      <span class="week-nav" id="weekNav" hidden>
+        <button id="weekPrev" title="Vorherige Woche">← Vorwoche</button>
+        <span id="weekLabel"></span>
+        <button id="weekNext" title="Nächste Woche">Folgewoche →</button>
+      </span>
+    </div>
+  </section>
+
+  <div id="status"></div>
+  <section id="results"></section>
+</main>
+
+<footer>
+  <div class="notice">
+    <strong>Hinweis:</strong> Dies ist ein inoffizielles, nicht-kommerzielles Projekt.
+    Es wird <strong>nicht</strong> von der Universität Wien bereitgestellt; die Universität
+    übernimmt keinerlei Verantwortung für die Richtigkeit der hier angezeigten Daten. Daten werden nicht Live abgefragt, sondern sind Zwischengespeichert.
+  </div>
+  <div class="data-stamp">Datenstand: <span id="dataStamp">…</span></div>
+  <div>
+    Autor: <em><a href="https://leo.prochazka.fr">Léo Procházka</a></em> in Kollaboration mit <em>deepseek-v4-flash-0731</em> und <em>glm-5.3-flash</em> <br> Kontakt: <em><a href="mailto:v9@prochazka.fr">v9@prochazka.fr</a></em> &nbsp;·&nbsp; Wohnort: <em>Wien</em> <br>Zweck der Website: <em>Demo Tool um Buchungen/Raumbelegung in der Uni zu finden.</em>
+  </div>
+  <details>
+    <summary>Nutzungshinweise &amp; Disclaimer</summary>
+    <ul>
+      <li>Datenquelle: öffentliche u:find-Schnittstelle der Universität Wien (m-ufind). Die Daten können
+      sich jederzeit und auch kurzfristig ohne Vorankündigung ändern; die Universität Wien kann u:find und
+      die Schnittstelle jederzeit modifizieren, einschränken oder einstellen. Aus Änderungen oder der
+      Einstellung bestehen keine Rechtsansprüche.</li>
+      <li>Dieses Tool dient allein nicht-kommerziellen Zwecken und soll nur vorübergehend dabei helfen,
+      Raumbelegungen zu finden. Die hier zwischengespeicherten Daten stellen eine bloß vorübergehende
+      Zwischenspeicherung zur Erbringung dieses Dienstes dar und werden regelmäßig neu bezogen bzw.
+      veraltetes Material gelöscht. Nach einer allfälligen Sperre des API-Zugangs werden alle Daten
+      dauerhaft gelöscht.</li>
+      <li>Für Schäden, die Usern oder Dritten im Zusammenhang mit der Nutzung dieser Daten entstehen,
+      wird keine Haftung übernommen. Es besteht kein technischer Support-Anspruch.</li>
+      <li>Die Logos „U:FIND“ und der Universität Wien werden nicht verwendet und dieses Tool wird nicht
+      durch diese Kennzeichen gekennzeichnet.</li>
+      <li>Es gelten die Nutzungsbedingungen der u:find-Schnittstelle:
+      <a href="https://ufind.univie.ac.at/de/help.html" rel="noopener" target="_blank">ufind.univie.ac.at/de/help.html</a></li>
+    </ul>
+  </details>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
